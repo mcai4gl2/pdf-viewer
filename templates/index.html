@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Browser</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/1.0.1/mini-default.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>PDF Browser</h1>
+
+    <a href="/upload_page">Upload a new document</a>
+
+    <h2>Documents</h2>
+    <input type="text" id="search-bar" placeholder="Search...">
+    <table id="documents-table">
+        <thead>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

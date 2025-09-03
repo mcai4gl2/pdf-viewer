@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Document</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/1.0.1/mini-default.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Upload Document</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <label for="doc_id">Document ID:</label>
+        <input type="text" id="doc_id" name="doc_id" required><br><br>
+
+        <label for="metadata">Metadata (JSON):</label>
+        <textarea id="metadata" name="metadata"></textarea><br><br>
+
+        <label for="change_description">Change Description:</label>
+        <textarea id="change_description" name="change_description"></textarea><br><br>
+
+        <label for="file">PDF File:</label>
+        <input type="file" id="file" name="file" accept=".pdf" required><br><br>
+
+        <label for="html_files">HTML Files (optional):</label>
+        <input type="file" id="html_files" name="html_files" accept=".html" multiple><br><br>
+
+        <button type="submit">Upload</button>
+    </form>
+
+    <div id="message"></div>
+
+    <script src="{{ url_for('static', filename='upload.js') }}"></script>
+</body>
+</html>

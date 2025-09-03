@@ -1,0 +1,84 @@
+body {
+    font-family: sans-serif;
+    margin: 2em;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+form {
+    margin-bottom: 2em;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5em;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 0.5em;
+    margin-bottom: 1em;
+}
+
+button {
+    padding: 0.5em 1em;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#message {
+    margin-top: 1em;
+    padding: 1em;
+    border-radius: 0.5em;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Table styling for better alignment with mini.css */
+#documents-table {
+    width: 100%;
+    table-layout: fixed; /* Ensures columns have equal width */
+    border-collapse: collapse; /* Removes space between cells */
+}
+
+#documents-table th,
+#documents-table td {
+    text-align: left; /* Align text to the left */
+    padding: 8px; /* Add some padding for readability */
+    border: 1px solid #ddd; /* Add borders for clarity */
+}
+
+#documents-table thead th {
+    background-color: #f2f2f2; /* Light background for headers */
+}
+
+/* Styling for the nested versions table */
+#documents-table .versions-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#documents-table .versions-table th,
+#documents-table .versions-table td {
+    text-align: left;
+    padding: 8px;
+    border: 1px solid #eee;
+}
+
+#documents-table .versions-table thead th {
+    background-color: #e9e9e9;
+}
