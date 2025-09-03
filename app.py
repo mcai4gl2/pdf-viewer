@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 from flask import Flask, request, jsonify, render_template, send_from_directory
-from database import get_db_connection, init_app
+from database import get_db_connection, init_app, delete_document_version
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -96,6 +96,14 @@ def upload_file():
         return jsonify({'success': True}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400
+
+@app.route('/documents/<doc_id>/versions/<int:version_number>', methods=['DELETE'])
+def delete_version(doc_id, version_number):
+    success, message = delete_document_version(doc_id, version_number)
+    if success:
+        return jsonify({'success': True, 'message': message}), 200
+    else:
+        return jsonify({'success': False, 'error': message}), 400
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

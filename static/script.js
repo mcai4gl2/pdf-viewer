@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <th>File Consistency</th>
                         <th>HTML Consistency</th>
                         <th>Created At</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${v.file_consistent ? '✅' : '❌'}</td>
                             <td>${v.html_paths.map(hp => hp.consistent ? '✅' : '❌').join(', ')}</td>
                             <td>${v.created_at}</td>
+                            <td><button class="delete-version-btn" data-doc-id="${doc.doc_id}" data-version="${v.version}">Delete</button></td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -107,5 +109,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     fetchAndRenderDocuments();
-});
 
+    // Function to handle version deletion
+    const deleteVersion = async (docId, version) => {
+        if (confirm(`Are you sure you want to delete version ${version} of document ${docId}?`)) {
+            try {
+                const response = await fetch(`/documents/${docId}/versions/${version}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(result.message);
+                    // Re-fetch and render documents to update the UI
+                    fetchAndRenderDocuments(searchBar.value);
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error deleting version:', error);
+                alert('An error occurred while deleting the version.');
+            }
+        }
+    };
+
+    // Event delegation for delete buttons (since they are dynamically created)
+    documentsTableBody.addEventListener('click', async (event) => {
+        if (event.target.classList.contains('delete-version-btn')) {
+            const docId = event.target.dataset.docId;
+            const version = event.target.dataset.version;
+            await deleteVersion(docId, version);
+        }
+    });
+});
