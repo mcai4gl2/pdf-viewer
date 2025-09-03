@@ -3,14 +3,18 @@ import json
 
 DATABASE_NAME = 'pdf_browser.db'
 
-def seed_data():
-    conn = sqlite3.connect(DATABASE_NAME)
+def seed_data(conn=None):
+    if conn is None:
+        conn = sqlite3.connect(DATABASE_NAME)
+        conn.row_factory = sqlite3.Row # Ensure row_factory is set for direct connections
+        conn.execute('PRAGMA foreign_keys = ON;') # Ensure foreign keys are enforced
     cursor = conn.cursor()
 
-    # Clear existing data
-    cursor.execute('DELETE FROM documents')
-    cursor.execute('DELETE FROM versions')
+    # Clear existing data (order matters due to foreign key constraints)
     cursor.execute('DELETE FROM html_documents')
+    cursor.execute('DELETE FROM versions')
+    cursor.execute('DELETE FROM votes') # Also clear votes table
+    cursor.execute('DELETE FROM documents')
 
     # Document 1
     doc1_metadata = {'name': 'Document A', 'author': 'Author 1', 'year': 2023}
@@ -47,7 +51,8 @@ def seed_data():
     cursor.execute('INSERT INTO html_documents (version_id, file_path) VALUES (?, ?)', (version3_id, 'uploads/doc-b-v2-html2.html'))
 
     conn.commit()
-    conn.close()
+    if conn is None: # Only close if this function opened the connection
+        conn.close()
 
 if __name__ == '__main__':
     seed_data()

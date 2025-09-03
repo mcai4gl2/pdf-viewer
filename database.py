@@ -5,22 +5,30 @@ import json
 
 DATABASE_NAME = 'pdf_browser.db'
 
-def get_db_connection():
-    if 'db' not in g:
-        if current_app.config.get('DATABASE'):
-            g.db = sqlite3.connect(
-                current_app.config['DATABASE'],
-                detect_types=sqlite3.PARSE_DECLTYPES
-            )
-        else:
-            g.db = sqlite3.connect(
-                DATABASE_NAME,
-                detect_types=sqlite3.PARSE_DECLTYPES
-            )
-        g.db.row_factory = sqlite3.Row
-        g.db.execute('PRAGMA foreign_keys = ON;') # Enable foreign key enforcement
-
-    return g.db
+def get_db_connection(database_name=None):
+    if database_name:
+        conn = sqlite3.connect(
+            database_name,
+            detect_types=sqlite3.PARSE_DECLTYPES
+        )
+        conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA foreign_keys = ON;') # Enable foreign key enforcement
+        return conn
+    else:
+        if 'db' not in g:
+            if current_app.config.get('DATABASE'):
+                g.db = sqlite3.connect(
+                    current_app.config['DATABASE'],
+                    detect_types=sqlite3.PARSE_DECLTYPES
+                )
+            else:
+                g.db = sqlite3.connect(
+                    DATABASE_NAME,
+                    detect_types=sqlite3.PARSE_DECLTYPES
+                )
+            g.db.row_factory = sqlite3.Row
+            g.db.execute('PRAGMA foreign_keys = ON;') # Enable foreign key enforcement
+        return g.db
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -28,8 +36,9 @@ def close_db(e=None):
     if db is not None:
         db.close()
 
-def create_tables():
-    conn = get_db_connection()
+def create_tables(conn=None):
+    if conn is None:
+        conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('''

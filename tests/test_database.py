@@ -3,7 +3,7 @@ import tempfile
 import pytest
 from flask import Flask
 from app import app
-from database import get_db_connection, create_tables, close_db, init_app, delete_document_version, insert_vote
+from database import get_db_connection, create_tables, close_db, init_app, delete_document_version, insert_vote, get_vote_counts, get_all_individual_votes
 import json
 from unittest.mock import patch, MagicMock
 
@@ -271,3 +271,85 @@ def test_delete_document_cascades_votes(mock_exists, mock_remove, populated_data
         cursor.execute('SELECT COUNT(*) FROM votes WHERE voter_info = ?', ('127.0.0.1',))
         remaining_votes = cursor.fetchone()[0]
         assert remaining_votes == 0
+
+@patch('os.remove')
+@patch('os.path.exists', return_value=False) # Files do not exist
+def test_delete_document_version_files_not_exist(mock_exists, mock_remove, populated_database):
+    with app.app_context():
+        # Delete version 1 of doc1
+        success, message = delete_document_version('doc1', 1)
+        assert success is True
+        assert "Version deleted successfully." in message
+        mock_remove.assert_not_called() # os.remove should not be called if files don't exist
+
+@patch('database.get_db_connection')
+def test_insert_vote_exception_handling(mock_get_db_connection, populated_database):
+    with app.app_context():
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_conn.cursor.return_value = mock_cursor
+        mock_get_db_connection.return_value = mock_conn
+
+        mock_cursor.execute.side_effect = Exception("Vote database error")
+
+        success, message = insert_vote('doc_vote', 1, 'good', '127.0.0.1')
+        assert success is False
+        assert "Vote database error" in message
+        mock_conn.rollback.assert_called_once()
+
+def test_get_vote_counts(populated_database):
+    with app.app_context():
+        # Insert some votes first
+        insert_vote('doc_vote', 1, 'good', 'voter1')
+        insert_vote('doc_vote', 1, 'good', 'voter2')
+        insert_vote('doc_vote', 1, 'bad', 'voter3')
+
+        counts = get_vote_counts()
+        assert isinstance(counts, list)
+        assert len(counts) > 0
+        
+        # Find the entry for doc_vote version 1
+        doc_vote_counts = next((item for item in counts if item['doc_id'] == 'doc_vote' and item['version'] == 1), None)
+        assert doc_vote_counts is not None
+        assert doc_vote_counts['good_votes'] >= 2
+        assert doc_vote_counts['bad_votes'] >= 1
+
+def test_get_all_individual_votes(populated_database):
+    with app.app_context():
+        # Insert some votes first
+        insert_vote('doc_vote', 1, 'good', 'voter_A')
+        insert_vote('doc_vote', 1, 'bad', 'voter_B')
+
+        votes = get_all_individual_votes()
+        assert isinstance(votes, list)
+        assert len(votes) > 0
+
+        # Check for specific votes
+        voter_a_vote = next((item for item in votes if item['doc_id'] == 'doc_vote' and item['voter_info'] == 'voter_A'), None)
+        assert voter_a_vote is not None
+        assert voter_a_vote['vote_type'] == 'good'
+
+        voter_b_vote = next((item for item in votes if item['doc_id'] == 'doc_vote' and item['voter_info'] == 'voter_B'), None)
+        assert voter_b_vote is not None
+        assert voter_b_vote['vote_type'] == 'bad'
+
+@patch('os.remove')
+@patch('os.path.exists', return_value=True)
+def test_delete_document_version_deletes_document_if_no_versions_remain(mock_exists, mock_remove, populated_database):
+    with app.app_context():
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Ensure doc2 has only one version (it does in populated_database)
+        # Delete the only version of doc2
+        success, message = delete_document_version('doc2', 1)
+        assert success is True
+        assert "Version deleted successfully." in message
+
+        # Verify doc2 is deleted from the documents table
+        cursor.execute('SELECT * FROM documents WHERE doc_id = ?', ('doc2',))
+        assert cursor.fetchone() is None
+
+        # Verify os.remove was called for the PDF and HTML file
+        mock_remove.assert_any_call('uploads/doc2_v1.pdf')
+        mock_remove.assert_any_call('uploads/doc2_v1.html')

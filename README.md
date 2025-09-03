@@ -23,6 +23,7 @@ This is a simple Python web application for uploading, viewing, and searching PD
 ├── requirements.txt
 ├── seed.py
 ├── SoftwareRequirement.md
+├── upload_client.py
 ├── static
 │   ├── script.js
 │   ├── style.css
@@ -34,9 +35,12 @@ This is a simple Python web application for uploading, viewing, and searching PD
 │   └── vote_results.html
 ├── tests
 │   ├── test_app.py
-│   └── test_database.py
+│   ├── test_database.py
+│   └── test_upload_client.py
 ├── uploads
-└── venv
+├── venv
+└── docs
+    └── upload_client_guide.md
 ```
 
 ## Getting Started
@@ -88,7 +92,7 @@ To start the Flask development server, run:
 python app.py
 ```
 
-The application will be available at `http://127.0.0.1:5000`.
+The application will be available at `http://172.0.0.1:5000`.
 
 ### Running Tests
 
@@ -107,3 +111,7 @@ pytest --cov=.
 ## API Documentation
 
 For details on the REST API endpoints, refer to [API.md](API.md).
+
+## Client Script
+
+The `upload_client.py` script provides a command-line interface to programmatically upload documents to the PDF Browser application. For detailed usage instructions and examples, refer to the [Upload Client Guide](docs/upload_client_guide.md).
