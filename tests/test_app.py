@@ -5,12 +5,16 @@ import io
 import tempfile
 import json
 import pytest
+import shutil
 from app import app, allowed_file
 from database import create_tables
 
 @pytest.fixture
 def client():
     db_fd, app.config['DATABASE'] = tempfile.mkstemp()
+    # Create a temporary directory for uploads
+    upload_dir = tempfile.mkdtemp()
+    app.config['UPLOAD_FOLDER'] = upload_dir
     app.config['TESTING'] = True
     client = app.test_client()
 
@@ -19,8 +23,11 @@ def client():
 
     yield client
 
+    # Clean up the temporary database file
     os.close(db_fd)
     os.unlink(app.config['DATABASE'])
+    # Clean up the temporary upload directory
+    shutil.rmtree(upload_dir)
 
 def test_allowed_file():
     assert allowed_file('test.pdf')
