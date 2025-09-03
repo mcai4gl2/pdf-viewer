@@ -89,7 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${v.file_consistent ? '✅' : '❌'}</td>
                             <td>${v.html_paths.map(hp => hp.consistent ? '✅' : '❌').join(', ')}</td>
                             <td>${v.created_at}</td>
-                            <td><button class="delete-version-btn" data-doc-id="${doc.doc_id}" data-version="${v.version}">Delete</button></td>
+                            <td>
+                                <button class="delete-version-btn" data-doc-id="${doc.doc_id}" data-version="${v.version}">Delete</button>
+                                <button class="vote-btn good" data-doc-id="${doc.doc_id}" data-version="${v.version}">Good</button>
+                                <button class="vote-btn bad" data-doc-id="${doc.doc_id}" data-version="${v.version}">Bad</button>
+                            </td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -132,12 +136,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Function to handle vote submission
+    const sendVote = async (docId, version, voteType) => {
+        try {
+            const response = await fetch('/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    doc_id: docId,
+                    version: parseInt(version),
+                    vote_type: voteType,
+                }),
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert(result.message);
+            } else {
+                alert(`Error: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Error sending vote:', error);
+            alert('An error occurred while sending your vote.');
+        }
+    };
+
     // Event delegation for delete buttons (since they are dynamically created)
     documentsTableBody.addEventListener('click', async (event) => {
         if (event.target.classList.contains('delete-version-btn')) {
             const docId = event.target.dataset.docId;
             const version = event.target.dataset.version;
             await deleteVersion(docId, version);
+        } else if (event.target.classList.contains('vote-btn')) {
+            const docId = event.target.dataset.docId;
+            const version = event.target.dataset.version;
+            const voteType = event.target.classList.contains('good') ? 'good' : 'bad';
+            await sendVote(docId, version, voteType);
         }
     });
 });

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote Results</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mini.css/1.0.1/mini-default.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Vote Results</h1>
+
+    <table id="vote-results-table">
+        <thead>
+            <tr>
+                <th>Document ID</th>
+                <th>Version</th>
+                <th>Good Votes</th>
+                <th>Bad Votes</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Vote results will be loaded here by JavaScript -->
+        </tbody>
+    </table>
+
+    <script src="{{ url_for('static', filename='vote_results.js') }}"></script>
+</body>
+</html>

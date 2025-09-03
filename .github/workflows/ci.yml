@@ -23,6 +23,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Initialize database
-      run: python database.py
+      run: python3 database.py
     - name: Run tests with coverage
-      run: pytest --cov=.
+      run: |
+        coverage run --omit=tests/* -m pytest
+        coverage report -m

@@ -3,7 +3,7 @@ import tempfile
 import pytest
 from flask import Flask
 from app import app
-from database import get_db_connection, create_tables, close_db, init_app, delete_document_version
+from database import get_db_connection, create_tables, close_db, init_app, delete_document_version, insert_vote
 import json
 from unittest.mock import patch, MagicMock
 
@@ -45,6 +45,12 @@ def populated_database(database_client):
         cursor.execute('INSERT INTO versions (document_id, version, file_path) VALUES (?, ?, ?)', (doc2_id, 1, 'uploads/doc2_v1.pdf'))
         v3_id = cursor.lastrowid
         cursor.execute('INSERT INTO html_documents (version_id, file_path) VALUES (?, ?)', (v3_id, 'uploads/doc2_v1.html'))
+
+        # Add a document for voting tests
+        cursor.execute('INSERT INTO documents (doc_id, metadata, latest_version) VALUES (?, ?, ?)', ('doc_vote', '{}', 1))
+        doc_vote_id = cursor.lastrowid
+        cursor.execute('INSERT INTO versions (document_id, version, file_path) VALUES (?, ?, ?)', (doc_vote_id, 1, 'uploads/doc_vote_v1.pdf'))
+        vote_v1_id = cursor.lastrowid
 
         conn.commit()
 
@@ -197,3 +203,71 @@ def test_delete_document_version_exception_handling(mock_exists, mock_remove, mo
         assert "Database error during test" in message
         mock_conn.rollback.assert_called_once()
         mock_remove.assert_not_called() # Ensure no file operations if DB fails early
+
+def test_insert_vote_success(populated_database):
+    with app.app_context():
+        success, message = insert_vote('doc_vote', 1, 'good', '127.0.0.1')
+        assert success is True
+        assert "Vote recorded successfully." in message
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM votes WHERE document_id = (SELECT id FROM documents WHERE doc_id = ?) AND version_id = (SELECT id FROM versions WHERE document_id = (SELECT id FROM documents WHERE doc_id = ?) AND version = ?) AND vote_type = ? AND voter_info = ?', ('doc_vote', 'doc_vote', 1, 'good', '127.0.0.1'))
+        vote = cursor.fetchone()
+        assert vote is not None
+
+def test_insert_vote_non_existent_doc(populated_database):
+    with app.app_context():
+        success, message = insert_vote('non_existent_doc', 1, 'good', '127.0.0.1')
+        assert success is False
+        assert "Document not found." in message
+
+def test_insert_vote_non_existent_version(populated_database):
+    with app.app_context():
+        success, message = insert_vote('doc_vote', 99, 'good', '127.0.0.1')
+        assert success is False
+        assert "Version not found." in message
+
+@patch('os.remove')
+@patch('os.path.exists', return_value=True)
+def test_delete_document_version_cascades_votes(mock_exists, mock_remove, populated_database):
+    with app.app_context():
+        # Insert a vote first
+        insert_vote('doc1', 1, 'good', '127.0.0.1')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM votes')
+        initial_vote_count = cursor.fetchone()[0]
+        assert initial_vote_count > 0
+
+        # Delete version 1 of doc1
+        success, message = delete_document_version('doc1', 1)
+        assert success is True
+
+        # Verify vote is deleted
+        cursor.execute('SELECT COUNT(*) FROM votes WHERE document_id = (SELECT id FROM documents WHERE doc_id = ?) AND version_id = (SELECT id FROM versions WHERE document_id = (SELECT id FROM documents WHERE doc_id = ?) AND version = ?)', ('doc1', 'doc1', 1))
+        remaining_votes = cursor.fetchone()[0]
+        assert remaining_votes == 0
+
+@patch('os.remove')
+@patch('os.path.exists', return_value=True)
+def test_delete_document_cascades_votes(mock_exists, mock_remove, populated_database):
+    with app.app_context():
+        # Insert a vote for doc2 (which has only one version)
+        insert_vote('doc2', 1, 'good', '127.0.0.1')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT COUNT(*) FROM votes')
+        initial_vote_count = cursor.fetchone()[0]
+        assert initial_vote_count > 0
+
+        # Delete the only version of doc2
+        success, message = delete_document_version('doc2', 1)
+        assert success is True
+
+        # Verify vote is deleted (document and version are gone, so vote should be too)
+        cursor.execute('SELECT COUNT(*) FROM votes WHERE voter_info = ?', ('127.0.0.1',))
+        remaining_votes = cursor.fetchone()[0]
+        assert remaining_votes == 0

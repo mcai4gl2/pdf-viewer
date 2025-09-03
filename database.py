@@ -1,6 +1,7 @@
 import sqlite3
 from flask import current_app, g
 import os
+import json
 
 DATABASE_NAME = 'pdf_browser.db'
 
@@ -17,6 +18,7 @@ def get_db_connection():
                 detect_types=sqlite3.PARSE_DECLTYPES
             )
         g.db.row_factory = sqlite3.Row
+        g.db.execute('PRAGMA foreign_keys = ON;') # Enable foreign key enforcement
 
     return g.db
 
@@ -47,7 +49,7 @@ def create_tables():
             change_description TEXT,
             file_path TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (document_id) REFERENCES documents (id)
+            FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE
         )
     ''')
 
@@ -56,7 +58,20 @@ def create_tables():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             version_id INTEGER NOT NULL,
             file_path TEXT NOT NULL,
-            FOREIGN KEY (version_id) REFERENCES versions (id)
+            FOREIGN KEY (version_id) REFERENCES versions (id) ON DELETE CASCADE
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS votes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            version_id INTEGER NOT NULL,
+            vote_type TEXT NOT NULL,
+            voter_info TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (version_id) REFERENCES versions (id) ON DELETE CASCADE
         )
     ''')
 
@@ -122,6 +137,66 @@ def delete_document_version(doc_id, version_number):
         conn.rollback()
         return False, str(e)
 
+def insert_vote(doc_id, version_number, vote_type, voter_info):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT id FROM documents WHERE doc_id = ?', (doc_id,))
+        document = cursor.fetchone()
+        if not document:
+            return False, "Document not found."
+        document_id = document['id']
+
+        cursor.execute('SELECT id FROM versions WHERE document_id = ? AND version = ?', (document_id, version_number))
+        version_data = cursor.fetchone()
+        if not version_data:
+            return False, "Version not found."
+        version_id = version_data['id']
+
+        cursor.execute('INSERT INTO votes (document_id, version_id, vote_type, voter_info) VALUES (?, ?, ?, ?)',
+                       (document_id, version_id, vote_type, voter_info))
+        conn.commit()
+        return True, "Vote recorded successfully."
+    except Exception as e:
+        conn.rollback()
+        return False, str(e)
+
+def get_vote_counts():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT
+            d.doc_id,
+            v.version,
+            SUM(CASE WHEN t.vote_type = 'good' THEN 1 ELSE 0 END) AS good_votes,
+            SUM(CASE WHEN t.vote_type = 'bad' THEN 1 ELSE 0 END) AS bad_votes
+        FROM votes t
+        JOIN documents d ON t.document_id = d.id
+        JOIN versions v ON t.version_id = v.id
+        GROUP BY d.doc_id, v.version
+        ORDER BY d.doc_id, v.version
+    ''')
+    results = cursor.fetchall()
+    return [dict(row) for row in results]
+
+def get_all_individual_votes():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT
+            d.doc_id,
+            v.version,
+            t.vote_type,
+            t.voter_info,
+            t.created_at
+        FROM votes t
+        JOIN documents d ON t.document_id = d.id
+        JOIN versions v ON t.version_id = v.id
+        ORDER BY d.doc_id, v.version, t.created_at
+    ''')
+    results = cursor.fetchall()
+    return [dict(row) for row in results]
+
 
 if __name__ == '__main__':
     conn = sqlite3.connect(DATABASE_NAME)
@@ -145,7 +220,7 @@ if __name__ == '__main__':
             change_description TEXT,
             file_path TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (document_id) REFERENCES documents (id)
+            FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE
         )
     ''')
 
@@ -154,7 +229,20 @@ if __name__ == '__main__':
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             version_id INTEGER NOT NULL,
             file_path TEXT NOT NULL,
-            FOREIGN KEY (version_id) REFERENCES versions (id)
+            FOREIGN KEY (version_id) REFERENCES versions (id) ON DELETE CASCADE
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS votes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            version_id INTEGER NOT NULL,
+            vote_type TEXT NOT NULL,
+            voter_info TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (document_id) REFERENCES documents (id) ON DELETE CASCADE,
+            FOREIGN KEY (version_id) REFERENCES versions (id) ON DELETE CASCADE
         )
     ''')
 

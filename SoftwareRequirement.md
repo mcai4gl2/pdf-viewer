@@ -26,3 +26,16 @@ Some techinical requirement:
 - **Multiple HTML Documents**: Each version of a document can now be associated with multiple HTML files.
 - **Consistency Check**: A new column will indicate if the files (PDF and HTML) stored in the database are consistent with the files present in the `uploads` folder.
 - **File Naming**: File names are generated using UUIDs, ensuring uniqueness and preventing clashes between different uploads.
+
+## User Voting Feature
+
+-   **Purpose**: Allow users to vote on the quality of document versions (good/bad).
+-   **Vote Storage**:
+    -   Votes will be stored in the database.
+    -   Each vote will record:
+        -   The `doc_id` and `version` of the document being voted on.
+        -   The type of vote (e.g., 'good' or 'bad').
+        -   The timestamp of the vote.
+        -   Information about the voter (e.g., remote IP address or a simple identifier from cookie, prioritizing what's easily available without complex authentication).
+-   **Vote Visibility**: Vote results (e.g., counts of good/bad votes) will **not** be displayed on the main document listing page.
+-   **Voting Interface**: Users can cast votes directly from the main document listing page using 'Good' and 'Bad' buttons. A separate dedicated page (`/vote_results_page`) is available to view the aggregated voting results, including individual voter details (who and when).

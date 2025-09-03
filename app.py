@@ -2,7 +2,7 @@ import os
 import uuid
 import json
 from flask import Flask, request, jsonify, render_template, send_from_directory
-from database import get_db_connection, init_app, delete_document_version
+from database import get_db_connection, init_app, delete_document_version, insert_vote, get_vote_counts, get_all_individual_votes
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -24,6 +24,36 @@ def index():
 @app.route('/upload_page')
 def upload_page():
     return render_template('upload.html')
+
+@app.route('/vote_results_page')
+def vote_results_page():
+    return render_template('vote_results.html')
+
+@app.route('/vote_results', methods=['GET'])
+def get_vote_results():
+    results = get_all_individual_votes()
+    return jsonify(results)
+
+
+@app.route('/vote', methods=['POST'])
+def vote():
+    doc_id = request.json.get('doc_id')
+    version = request.json.get('version')
+    vote_type = request.json.get('vote_type')
+    voter_info = request.remote_addr # Using remote IP as voter info
+
+    if not all([doc_id, version, vote_type]):
+        return jsonify({'error': 'Missing doc_id, version, or vote_type'}), 400
+
+    if vote_type not in ['good', 'bad']:
+        return jsonify({'error': "Invalid vote_type. Must be 'good' or 'bad'."}), 400
+
+    success, message = insert_vote(doc_id, version, vote_type, voter_info)
+
+    if success:
+        return jsonify({'success': True, 'message': message}), 200
+    else:
+        return jsonify({'success': False, 'error': message}), 400
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
