@@ -1,5 +1,7 @@
 # PDF Browser
 
+[![codecov](https://codecov.io/gh/mcai4gl2/pdf-viewer/branch/main/graph/badge.svg)](https://codecov.io/gh/mcai4gl2/pdf-viewer)
+
 This is a simple Python web application for uploading, viewing, and searching PDF documents and their associated metadata.
 
 ## Features
@@ -106,6 +108,23 @@ To run tests with coverage:
 
 ```bash
 pytest --cov=.
+```
+
+## Test Coverage
+
+```
+Name                          Stmts   Miss  Cover
+-------------------------------------------------
+app.py                          163     22    87%
+database.py                     127     30    76%
+seed.py                          38      5    87%
+tests/test_app.py               159      0   100%
+tests/test_database.py          256      1    99%
+tests/test_seed.py               44      0   100%
+tests/test_upload_client.py     158      0   100%
+upload_client.py                 76      4    95%
+-------------------------------------------------
+TOTAL                          1021     62    94%
 ```
 
 ## API Documentation
