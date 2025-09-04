@@ -29,7 +29,8 @@ def test_upload_document_success(mock_file_open, mock_os_path_exists, mock_reque
     assert result is True
     mock_requests_post.assert_called_once()
     args, kwargs = mock_requests_post.call_args
-    assert kwargs['files']['file'][0] == "dummy.pdf"
+    assert kwargs['files'][0][0] == 'file'
+    assert kwargs['files'][0][1][0] == "dummy.pdf"
     assert kwargs['data']['doc_id'] == "test_doc"
     assert "Upload successful!" in capsys.readouterr().out
 
@@ -133,17 +134,21 @@ def test_upload_document_with_html(mock_file_open, mock_os_path_exists, mock_req
     mock_requests_post.assert_called_once()
     args, kwargs = mock_requests_post.call_args
 
-    # Assert that 'html_files' is a list of tuples
-    assert isinstance(kwargs['files']['html_files'], list)
-    assert len(kwargs['files']['html_files']) == 2
+    # Assert that 'files' is a list of tuples for multipart upload
+    assert isinstance(kwargs['files'], list)
+    assert len(kwargs['files']) == 3 # 1 pdf + 2 html
 
-    # Assert content of each HTML file tuple
-    assert kwargs['files']['html_files'][0][0] == "page1.html"
-    assert kwargs['files']['html_files'][0][1].read() == b"html1_content"
-    assert kwargs['files']['html_files'][1][0] == "page2.html"
-    assert kwargs['files']['html_files'][1][1].read() == b"html2_content"
+    assert kwargs['files'][0][0] == 'file'
+    assert kwargs['files'][1][0] == 'html_files'
+    assert kwargs['files'][2][0] == 'html_files'
+
+    assert kwargs['files'][1][1][0] == "page1.html"
+    assert kwargs['files'][1][1][1].read() == b"html1_content"
+    assert kwargs['files'][2][1][0] == "page2.html"
+    assert kwargs['files'][2][1][1].read() == b"html2_content"
 
     assert "Upload successful!" in capsys.readouterr().out
+
 
 @patch('requests.post')
 @patch('os.path.exists', return_value=True)

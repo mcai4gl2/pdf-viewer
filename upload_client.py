@@ -33,9 +33,9 @@ def upload_document(pdf_path, metadata_json_path, html_file_paths=None, base_url
     html_file_handles = []
     try:
         pdf_file_handle = open(pdf_path, 'rb')
-        files = {
-            'file': (os.path.basename(pdf_path), pdf_file_handle, 'application/pdf')
-        }
+        files = [
+            ('file', (os.path.basename(pdf_path), pdf_file_handle, 'application/pdf'))
+        ]
 
         # Read metadata JSON
         with open(metadata_json_path, 'r') as f:
@@ -55,12 +55,10 @@ def upload_document(pdf_path, metadata_json_path, html_file_paths=None, base_url
 
         # Add HTML files if provided
         if html_file_paths:
-            html_files_for_request = []
             for html_path in html_file_paths:
                 html_file_handle = open(html_path, 'rb')
-                html_files_for_request.append((os.path.basename(html_path), html_file_handle, 'text/html'))
+                files.append(('html_files', (os.path.basename(html_path), html_file_handle, 'text/html')))
                 html_file_handles.append(html_file_handle)
-            files['html_files'] = html_files_for_request # Assign the list to the key
 
         print(f"Uploading to: {upload_url}")
         print(f"Doc ID: {doc_id}")
